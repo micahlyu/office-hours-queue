@@ -67,7 +67,16 @@ First: read the docs and the agent skill, propose a data model and a permission 
   - The test account passwords were random and stored by the CLI in `~/.deepspace/test-accounts.json`, not in the repo.
 - Results: `npx deepspace test run all` gave 13/13 passing. `npx vitest run src/schemas` gave 8/8. `tsc --noEmit` and `eslint .` are clean.
 
-**Human checked:** _(pending)_
+- Deployed with `npx deepspace deploy`. The first attempt failed with the platform error `release_reconciliation_pending`.
+  Rerunning it, as the error instructed, succeeded: release `rel_01M7ZCED4VV5G3HC2MY2BRN4BT` at **https://office-hours-queue.app.space**.
+  The source is the DeepSpace cloud repo (git remote `space`). No GitHub remote has been added yet.
+- Live probes:
+  - `/home` → 200; `/api/auth/ok` → `{"ok":true}`;
+  - `/api/actions/setStatus` with no token → 401;
+  - the served JS contains the new pages.
+- Not yet checked live: a real two-person run with Google or GitHub sign-in. The tests ran against the local dev server.
+
+**Human checked:** _(pending: try the live site with two accounts)_
 
 ### File map: what to explain in the live round
 
