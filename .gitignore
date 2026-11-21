@@ -4,6 +4,13 @@ dist
 .wrangler.deepspace.*.toml
 .dev.vars
 .dev.vars.*
+# Secrets never live in the repo (use `npx deepspace secrets`); test-account
+# credentials and CLI sessions live in ~/.deepspace, outside the repo.
+.env
+.env.*
+*.pem
+*.key
+.claude/settings.local.json
 .deepspace
 .worker-bundle.js
 *.tgz
