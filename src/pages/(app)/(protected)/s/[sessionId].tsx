@@ -112,7 +112,7 @@ export default function SessionPage() {
         {active.length === 0 && <p className="text-sm text-muted-foreground">Nobody is waiting.</p>}
         <ol className="divide-y divide-border rounded-md border border-border">
           {active.map((e) => (
-            <li key={e.recordId} className="flex items-start gap-3 px-4 py-3" data-testid="queue-entry">
+            <li key={e.recordId} className="flex items-start gap-3 px-4 py-3" data-testid="queue-entry" data-entry-id={e.recordId}>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">
                   {getName(e.data.studentId) ?? 'Student'}
