@@ -15,7 +15,10 @@ const PORT = Number(process.env.DEEPSPACE_PORT ?? 5173)
 // Local Network Access checks to top-level `localhost` navigation in an agent
 // container; the explicit loopback address keeps the browser and Vite on the
 // same local origin without relying on hostname classification.
-const BASE_URL = `http://127.0.0.1:${PORT}`
+// Set E2E_BASE_URL (e.g. https://office-hours-queue.app.space) to run the suite against a deployed build
+// instead of starting a local server.
+const LIVE_URL = process.env.E2E_BASE_URL
+const BASE_URL = LIVE_URL ?? `http://127.0.0.1:${PORT}`
 
 export default defineConfig({
   testDir: '.',
@@ -27,7 +30,7 @@ export default defineConfig({
     headless: true,
     launchOptions: chromiumLaunchOptions(),
   },
-  webServer: {
+  webServer: LIVE_URL ? undefined : {
     // Bind the local test server directly. A bare `--host` asks Vite to
     // enumerate every interface, which fails in restricted containers before
     // the app can start (`uv_interface_addresses`).

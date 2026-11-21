@@ -160,7 +160,7 @@ function TAControls(props: { session: RecordData<Session>; onToggleOpen: () => v
   const link = `${window.location.origin}/s/${props.session.recordId}`
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border p-3">
-      <Input readOnly value={link} aria-label="Share link" className="min-w-0 flex-1" onFocus={(e) => e.target.select()} />
+      <Input readOnly value={link} aria-label="Share link" className="w-full min-w-0 sm:w-auto sm:flex-1" onFocus={(e) => e.target.select()} />
       <Button
         variant="outline"
         onClick={() => navigator.clipboard.writeText(link).then(() => success('Link copied'))}
