@@ -108,3 +108,50 @@ First: read the docs and the agent skill, propose a data model and a permission 
 - `joinQueue` checks for duplicates and then creates. A double-click at the same instant could add two entries.
 - The session page loads all sessions to find one. That's fine at class scale.
 - Any signed-in user can read every queue's questions. The design accepted this.
+
+---
+
+## 2026-11-21: Step 3, test the live build
+
+**Asked:** Run the two-account end-to-end suite against https://office-hours-queue.app.space, not localhost.
+Confirm on the live site:
+- sign-in gate;
+- create session and open it from the share link;
+- live join;
+- helping, done and skipped, seen by the student;
+- the student can't `setStatus` or edit another entry;
+- a closed session refuses joins;
+- phone width.
+
+Fix failures, redeploy, rerun, and log here.
+
+**Did:**
+- `tests/playwright.config.ts`: when `E2E_BASE_URL` is set, it targets that URL and starts no local server.
+  The run command is
+  `$env:E2E_BASE_URL='https://office-hours-queue.app.space'; npx playwright test -c tests/playwright.config.ts`
+- Extended `tests/queue.spec.ts` with:
+  - **Signed-out gate:** `/home` and `/s/<id>` show "Sign in to continue", and an action call without a token gets 401.
+  - **Share link:** the TA's share link opens the same session in the student's browser.
+  - **Status changes:** skipped, in addition to helping and done.
+  - **Direct record writes**, through the app's own tool endpoint `/_deepspace/agent/browser/tools/records.update`, which runs as the caller under the same record room permission rules. As the student:
+    - editing another person's entry is refused;
+    - setting status on your own entry is refused;
+    - closing the TA's session is refused;
+    - editing your own question succeeds, which proves the refusals are real.
+  - **`setStatus` on another person's entry** is refused, not only on the student's own.
+  - **Phone width (375×812):** no sideways scroll, and every TA and student button is on screen. Screenshots are saved to `test-results/`.
+- **Live run 1: 15/15 passed.**
+  - I confirmed it really was live: no local server was running, and the test accounts got separate sign-in states for the app.space origin.
+  - The phone screenshot still showed a problem the asserts missed: the share link box was squeezed to about 90px, showing only "https://of".
+- **Fix:** the share link input takes a full row below 640px (`w-full sm:w-auto sm:flex-1`), and the phone test now asserts it is wider than 300px.
+  The new assert failed on the old live build, as expected.
+  Committed and redeployed: release `rel_01M7ZCQZ3SXMHPR8NE5P7P24JC`, `serving: confirmed`.
+- **Live run 2: 15/15 passed.** The phone screenshot shows the full link.
+  A local regression run also passed: `deepspace test run all` 15/15, and `vitest` 11/11.
+
+**Not covered:**
+- Real Google or GitHub sign-in. The tests sign in with DeepSpace test accounts by email and password.
+- Real phone browsers. 375px Chromium emulation is the closest check here.
+- Two different real students. The "another entry" case uses the TA's account joining through the server as the second person.
+
+**Human checked:** _(pending)_
