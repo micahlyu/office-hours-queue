@@ -154,4 +154,35 @@ Fix failures, redeploy, rerun, and log here.
 - Real phone browsers. 375px Chromium emulation is the closest check here.
 - Two different real students. The "another entry" case uses the TA's account joining through the server as the second person.
 
+**Human checked:** Asked for the GitHub push next (the request at the top of step 4).
+
+---
+
+## 2026-11-21: Step 4, GitHub repo
+
+**Asked:**
+- Put the code on GitHub for the submission link.
+- Rescan for secrets first, and make sure `.gitignore` covers them.
+- Create `office-hours-queue` under your account (you chose **public**), add it as the remote, push.
+- Redeploy to confirm deploys still work and the live site serves the latest build.
+
+**Did:**
+- **Secrets scan, all 5 commits plus the working tree:**
+  - Searched for the 8 real credential values on this machine: the 2 test-account passwords in `~/.deepspace/test-accounts.json`, the CLI login token and session, and the saved Playwright sign-in cookies. **0 hits.**
+  - A pattern scan for API keys, GitHub/AWS tokens, private keys and long password/token literals found nothing.
+  - No `.env`, `.dev.vars`, key or `test-results/` file has ever been tracked.
+  - `wrangler.toml` `[vars]` holds only the public app id and name.
+- **`.gitignore`:** it already had `.dev.vars*`, `.deepspace`, `.wrangler`, `test-results/` and `dist`. I added `.env`, `.env.*`, `*.pem`, `*.key` and `.claude/settings.local.json`.
+- **GitHub CLI:** installed `gh` 2.105.0 with `winget install GitHub.cli`, and you signed in with `gh auth login --web` as `micahlyu`.
+- **Repo:** `gh repo create office-hours-queue --public --source . --remote origin --push`.
+  It's **public** at https://github.com/micahlyu/office-hours-queue. GitHub's `master` equals local HEAD `de48d19`.
+- **Remotes:**
+  - `origin` is GitHub.
+  - `space` is DeepSpace's own repo, which the first deploy claimed as the app's permanent deploy source.
+  - Adding GitHub doesn't change where deploys come from.
+- **Redeploy:** `npx deepspace deploy` pushed `de48d19` to `space`, giving release `rel_01M7ZDJR90F39D1FQVZTGZ030V` with `serving: confirmed`, `dataPlane: confirmed` and `source: deepspace`.
+  (One attempt lost its output to a PowerShell regex error in my filter. I reran the deploy plainly, with the same inputs.)
+- **Live check:** the full suite against https://office-hours-queue.app.space passed **15/15**.
+  That includes the phone test asserting the full-width share link, which only passes on the latest build.
+
 **Human checked:** _(pending)_
