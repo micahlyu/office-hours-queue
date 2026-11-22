@@ -209,7 +209,7 @@ Fix failures, redeploy, rerun, and log here.
 - **Checks:** `tsc` and `eslint` are clean. `vitest` passed 11/11, and `deepspace test run all` passed 15/15 locally.
 - **Deploy:** release `rel_01M80BCFG0FNPAND2Y3N5VFAC3`, `serving: confirmed`.
   - The live HTML has the new `<title>`, the description and the headline.
-  - I took screenshots of the live landing page at 1280px and 375px wide (`test-results/landing-*.png`, not committed).
+  - I took screenshots of the live landing page at 1280px and 375px wide and sent them to you in chat (not committed).
   - The full suite against the live site passed **15/15**.
 
 **Human checked:** _(pending)_
