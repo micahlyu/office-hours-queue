@@ -185,4 +185,31 @@ Fix failures, redeploy, rerun, and log here.
 - **Live check:** the full suite against https://office-hours-queue.app.space passed **15/15**.
   That includes the phone test asserting the full-width share link, which only passes on the latest build.
 
+**Human checked:** Asked "what's next", then approved the landing page and README (step 5).
+
+---
+
+## 2026-11-21: Step 5, landing page and README
+
+**Asked:** "Yes, do both." Replace the scaffold's placeholder landing page and add a README to the repo.
+
+**Did:**
+- **`src/pages/index.tsx`:** a real landing page with a headline, the three steps (TA opens a session, students join, everyone sees it live), a note that the rules are enforced on the server, and a "Sign in and start" link to `/home`.
+  It's still static: no DeepSpace imports, no auth call, no WebSocket. The scaffold smoke test that checks this still passes.
+- **`src/constants.ts`:** `APP_NAME` changed from `office-hours-queue` to `Office Hours Queue`. It appears in the nav, page titles and the landing page.
+  This only changes what's displayed. The app id, subdomain and data scope come from `wrangler.toml` and didn't change.
+- **`index.html`:** the browser tab title.
+- **`src/seo.ts`:** a real title and description for search results and link previews (the page is prerendered at build).
+- **`README.md`:**
+  - what the app does and the live link;
+  - a table of where each permission rule is enforced;
+  - the project layout;
+  - how to run, deploy and test it, including against the live site;
+  - known limits.
+- **Checks:** `tsc` and `eslint` are clean. `vitest` passed 11/11, and `deepspace test run all` passed 15/15 locally.
+- **Deploy:** release `rel_01M80BCFG0FNPAND2Y3N5VFAC3`, `serving: confirmed`.
+  - The live HTML has the new `<title>`, the description and the headline.
+  - I took screenshots of the live landing page at 1280px and 375px wide (`test-results/landing-*.png`, not committed).
+  - The full suite against the live site passed **15/15**.
+
 **Human checked:** _(pending)_
