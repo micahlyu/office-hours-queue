@@ -288,4 +288,21 @@ You chose to add integrations first, picked **two (AI + email)** over three, and
   A screenshot showed the AI grouping both recursion questions under "Recursion not terminating, stack overflow (2)".
 - README now has a table of DeepSpace features and integrations, why video, calendar and Slack weren't used, the new rules, and the new known limits.
 
-**Human checked:** _(pending: review the writeup before the portal submission)_
+**Human checked:** Reviewed the summary and writeup and said "submit!".
+
+---
+
+## 2026-11-23: Step 9, submitted
+
+**Asked:** "submit!"
+
+**Did:** On https://careers.deep.space/task (signed in as Micah Yu), filled in:
+- Deployed app URL: https://office-hours-queue.app.space
+- Repository: https://github.com/micahlyu/office-hours-queue
+- Writeup: the text approved in chat, with markdown bold removed for the plain textarea.
+
+Checked the three fields on screen, then clicked **Submit task**.
+The portal confirmed "Task submitted: We'll review it and schedule your live coding session", with the badge "Submitted Mon, Nov 23, 2:37 PM".
+The live release at submission was `rel_01M852F64QTS6YE02DCJSSBHNK`. The repo was at `d264126`, plus this NOTES commit.
+
+**Human checked:** Approved the submission ("submit!").
