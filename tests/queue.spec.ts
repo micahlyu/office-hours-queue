@@ -106,7 +106,10 @@ test('TA runs a session and the student sees every change live', async ({ users 
   await expect(row).toContainText('Second question', { timeout: 15_000 })
   await row.getByRole('button', { name: 'Skip' }).click()
   await expect(student.page.getByLabel('Your question')).toBeVisible({ timeout: 15_000 })
-  await expect(ta.page.getByText('skipped')).toBeVisible()
+  // Finished list shows display labels, not the raw stored values.
+  await expect(ta.page.getByText('Skipped', { exact: true })).toBeVisible()
+  await expect(ta.page.getByText('Done', { exact: true })).toBeVisible()
+  await expect(ta.page.getByText('skipped', { exact: true })).toHaveCount(0)
 
   // Close -> student's view switches live.
   await ta.page.getByRole('button', { name: 'Close session' }).click()

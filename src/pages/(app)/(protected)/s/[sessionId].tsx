@@ -18,6 +18,14 @@ import { QUESTION_MAX, type EntryStatus, type QueueEntry, type Session } from '.
 
 const ACTIVE: EntryStatus[] = ['helping', 'waiting']
 
+// Display text only; the stored status values stay lowercase.
+const STATUS_LABEL: Record<EntryStatus, string> = {
+  waiting: 'Waiting',
+  helping: 'Helping',
+  done: 'Done',
+  skipped: 'Skipped',
+}
+
 export default function SessionPage() {
   const { sessionId = '' } = useParams()
   const { userId } = useAuth()
@@ -144,7 +152,7 @@ export default function SessionPage() {
                 <span className="flex-1 truncate">
                   {getName(e.data.studentId) ?? 'Student'}: {e.data.question}
                 </span>
-                <Badge variant={e.data.status === 'done' ? 'success' : 'secondary'}>{e.data.status}</Badge>
+                <Badge variant={e.data.status === 'done' ? 'success' : 'secondary'}>{STATUS_LABEL[e.data.status]}</Badge>
                 <Button size="sm" variant="ghost" onClick={() => setStatus(e.recordId, 'waiting')}>Requeue</Button>
               </li>
             ))}
