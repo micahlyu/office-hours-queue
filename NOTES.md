@@ -212,4 +212,25 @@ Fix failures, redeploy, rerun, and log here.
   - I took screenshots of the live landing page at 1280px and 375px wide and sent them to you in chat (not committed).
   - The full suite against the live site passed **15/15**.
 
+**Human checked:** Asked next for capitalized status labels (step 6).
+
+---
+
+## 2026-11-23: Step 6, status display labels
+
+**Asked:** In the Finished list, show statuses capitalized ("Skipped", "Done" and so on) using a display label, without changing the stored values. Deploy and push to GitHub.
+
+**Did:**
+- `src/pages/(app)/(protected)/s/[sessionId].tsx`: added `STATUS_LABEL: Record<EntryStatus, string>`, which maps `waiting/helping/done/skipped` to `Waiting/Helping/Done/Skipped`.
+  The Finished badge renders `STATUS_LABEL[e.data.status]`. The stored values, schema options, `setStatus` and the tests' server calls all still use lowercase.
+  Typing the map as `Record<EntryStatus, string>` means a new status won't compile until it has a label.
+- `tests/queue.spec.ts`: the Finished list must show exactly "Skipped" and "Done", and no raw "skipped".
+- Checks: `tsc` and `eslint` are clean. `vitest` passed 11/11, and `deepspace test run all` passed 15/15 locally.
+- Deployed release `rel_01M84V61VJ3GHRXRJGBMNK878N` (`serving: confirmed`).
+- **Live run 1: 14 passed, 1 failed** ("element(s) not found" on a visibility check).
+  I couldn't reproduce it: the next full live run passed 15/15, and 4 repeats of the queue tests passed 16/16.
+  The likely cause: three checks waiting on a live update ("Finished", "Skipped", "Done") used Playwright's default 5s timeout, while every other live-update check in the file uses 15s.
+  I gave those three 15s too (a test-only change, so no redeploy). After that: full live run 15/15, then 3 repeats of the queue tests 12/12.
+  The original failure's details were overwritten before I could read them, so the cause is likely but not proven.
+
 **Human checked:** _(pending)_

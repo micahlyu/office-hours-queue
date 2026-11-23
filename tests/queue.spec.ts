@@ -99,7 +99,7 @@ test('TA runs a session and the student sees every change live', async ({ users 
   await expect(student.page.getByText('Your TA is helping you now.')).toBeVisible({ timeout: 15_000 })
   await row.getByRole('button', { name: 'Done' }).click()
   await expect(student.page.getByLabel('Your question')).toBeVisible({ timeout: 15_000 })
-  await expect(ta.page.getByText('Finished')).toBeVisible()
+  await expect(ta.page.getByText('Finished')).toBeVisible({ timeout: 15_000 })
 
   // skipped -> student is out of the queue again.
   await join(student.page, 'Second question')
@@ -107,8 +107,8 @@ test('TA runs a session and the student sees every change live', async ({ users 
   await row.getByRole('button', { name: 'Skip' }).click()
   await expect(student.page.getByLabel('Your question')).toBeVisible({ timeout: 15_000 })
   // Finished list shows display labels, not the raw stored values.
-  await expect(ta.page.getByText('Skipped', { exact: true })).toBeVisible()
-  await expect(ta.page.getByText('Done', { exact: true })).toBeVisible()
+  await expect(ta.page.getByText('Skipped', { exact: true })).toBeVisible({ timeout: 15_000 })
+  await expect(ta.page.getByText('Done', { exact: true })).toBeVisible({ timeout: 15_000 })
   await expect(ta.page.getByText('skipped', { exact: true })).toHaveCount(0)
 
   // Close -> student's view switches live.
