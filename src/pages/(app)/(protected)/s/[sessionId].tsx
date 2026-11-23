@@ -3,8 +3,10 @@
  *
  * Everyone sees the same live queue (useQuery streams changes over the record
  * room's WebSocket). What you can *do* depends on who you are:
- *   - the session's TA: share link, mark helping/done/skip, close or reopen;
- *   - a student: join with one question, edit it, or leave.
+ *   - the session's TA: share link, mark helping/done/skip, close or reopen,
+ *     and ask AI to group similar waiting questions;
+ *   - a student: join with one question (optionally asking for an email when
+ *     it's their turn), edit it, or leave.
  * The buttons are just UI: every one of these is re-checked on the server
  * (schema permissions in src/schemas/queue-schema.ts, or src/actions/index.ts).
  */
@@ -12,8 +14,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth, useMutations, useQuery, useUserLookup, type RecordData } from 'deepspace'
-import { Badge, Button, Input, useToast } from '@/components/ui'
+import { Badge, Button, Checkbox, Input, useToast } from '@/components/ui'
 import { callAction } from '@/lib/actions'
+import type { QuestionGroup } from '@/actions/group-questions'
 import { QUESTION_MAX, type EntryStatus, type QueueEntry, type Session } from '../../../../schemas/queue-schema'
 
 const ACTIVE: EntryStatus[] = ['helping', 'waiting']
@@ -96,6 +99,7 @@ export default function SessionPage() {
       </header>
 
       {isTA && <TAControls session={session} onToggleOpen={toggleOpen} ready={sessionMutations.ready} />}
+      {isTA && waiting.length >= 2 && <QuestionGroups sessionId={sessionId} waiting={waiting} />}
 
       {!isTA && !myEntry && session.data.isOpen && <JoinForm sessionId={sessionId} />}
       {!isTA && !myEntry && !session.data.isOpen && (
@@ -185,13 +189,14 @@ function TAControls(props: { session: RecordData<Session>; onToggleOpen: () => v
 function JoinForm({ sessionId }: { sessionId: string }) {
   const toast = useToast()
   const [question, setQuestion] = useState('')
+  const [notify, setNotify] = useState(false)
   const [busy, setBusy] = useState(false)
 
   async function join(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     try {
-      await callAction('joinQueue', { sessionId, question })
+      await callAction('joinQueue', { sessionId, question, notify })
       setQuestion('')
     } catch (err) {
       toast.error('Could not join', err instanceof Error ? err.message : undefined)
@@ -201,15 +206,21 @@ function JoinForm({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <form onSubmit={join} className="flex gap-2">
-      <Input
-        aria-label="Your question"
-        placeholder="What do you need help with? (one line)"
-        value={question}
-        maxLength={QUESTION_MAX}
-        onChange={(e) => setQuestion(e.target.value)}
-      />
-      <Button type="submit" disabled={busy || !question.trim()}>Join queue</Button>
+    <form onSubmit={join} className="space-y-2">
+      <div className="flex gap-2">
+        <Input
+          aria-label="Your question"
+          placeholder="What do you need help with? (one line)"
+          value={question}
+          maxLength={QUESTION_MAX}
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+        <Button type="submit" disabled={busy || !question.trim()}>Join queue</Button>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Checkbox checked={notify} onCheckedChange={setNotify} />
+        Email me when it’s my turn
+      </label>
     </form>
   )
 }
@@ -250,5 +261,60 @@ function MyEntry(props: {
         </div>
       )}
     </div>
+  )
+}
+
+/** TA-only: ask the server to group waiting questions by topic (AI integration). A snapshot, refreshed on click. */
+function QuestionGroups({ sessionId, waiting }: { sessionId: string; waiting: RecordData<QueueEntry>[] }) {
+  const toast = useToast()
+  const { getName } = useUserLookup()
+  const [groups, setGroups] = useState<QuestionGroup[] | null>(null)
+  const [busy, setBusy] = useState(false)
+  const byId = new Map(waiting.map((e) => [e.recordId, e]))
+
+  async function run() {
+    setBusy(true)
+    try {
+      setGroups((await callAction<{ groups: QuestionGroup[] }>('groupQuestions', { sessionId })).groups)
+    } catch (err) {
+      toast.error('Could not group questions', err instanceof Error ? err.message : undefined)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="space-y-2 rounded-md border border-border p-3" data-testid="question-groups">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-medium">Similar questions</h2>
+        <Button size="sm" variant="outline" onClick={run} loading={busy} disabled={busy}>
+          {groups ? 'Regroup' : 'Group similar questions'}
+        </Button>
+      </div>
+      {groups && (
+        <ul className="space-y-2">
+          {groups.map((g, i) => {
+            // Entries helped or removed since the snapshot drop out.
+            const items = g.ids.flatMap((id) => byId.get(id) ?? [])
+            if (!items.length) return null
+            return (
+              <li key={i} className="text-sm" data-testid="question-group">
+                <p className="font-medium">
+                  {g.topic} <span className="text-muted-foreground">({items.length})</span>
+                </p>
+                <ul className="ml-4 list-disc text-muted-foreground">
+                  {items.map((e) => (
+                    <li key={e.recordId} className="break-words">
+                      {getName(e.data.studentId) ?? 'Student'}: {e.data.question}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      <p className="text-xs text-muted-foreground">Groups are suggested by AI from the waiting questions.</p>
+    </section>
   )
 }

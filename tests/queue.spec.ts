@@ -175,6 +175,62 @@ test('server refuses what a student must not do', async ({ users }) => {
   })
 })
 
+test('integrations: AI groups similar questions for the TA; email opt-in when helped', async ({ users }) => {
+  test.setTimeout(120_000)
+  const [ta, student] = await users(['Tina TA', 'Sam Student'])
+  const path = await startSession(ta.page)
+  const sessionId = path.split('/').pop()!
+
+  // Student opts in to email and joins.
+  await student.page.goto(path)
+  await student.page.getByLabel('Your question').fill('Why does my recursive factorial never reach the base case?')
+  await student.page.getByRole('checkbox', { name: 'Email me when it’s my turn' }).click()
+  await student.page.getByRole('button', { name: 'Join queue' }).click()
+  await expect(student.page.getByText('You’re #1 in line.')).toBeVisible({ timeout: 15_000 })
+  // A second person (the TA's account, through the server) asks a similar question, without email.
+  expect(await rawAction(ta.page, 'joinQueue', { sessionId, question: 'My recursion runs forever and overflows the stack' })).toMatchObject({ success: true })
+  await expect(ta.page.getByTestId('queue-entry')).toHaveCount(2, { timeout: 15_000 })
+
+  // Only the TA may spend the AI integration.
+  expect(await rawAction(student.page, 'groupQuestions', { sessionId })).toMatchObject({
+    success: false,
+    error: 'Only this session’s TA can do that.',
+  })
+
+  // AI grouping: every waiting question appears exactly once, under a real (model-written) topic.
+  await ta.page.getByRole('button', { name: 'Group similar questions' }).click()
+  const panel = ta.page.getByTestId('question-groups')
+  await expect(panel.getByTestId('question-group').first()).toBeVisible({ timeout: 30_000 })
+  for (const q of ['recursive factorial never reach', 'recursion runs forever']) {
+    await expect(panel.getByText(q)).toHaveCount(1)
+  }
+  const topics = await panel.getByTestId('question-group').locator('p').allInnerTexts()
+  expect(topics.some((t) => !t.startsWith('Other')), `topics: ${topics.join(' | ')}`).toBe(true)
+
+  // Email: sent on "helping" only for the student who opted in.
+  const [optedIn, notOptedIn] = await Promise.all(
+    ['recursive factorial', 'recursion runs forever'].map((q) =>
+      ta.page.getByTestId('queue-entry').filter({ hasText: q }).getAttribute('data-entry-id'),
+    ),
+  )
+  const helped = await rawAction(ta.page, 'setStatus', { entryId: optedIn, status: 'helping' })
+  expect(helped, JSON.stringify(helped)).toMatchObject({ success: true, data: { emailed: true } })
+  await expect(student.page.getByText('Your TA is helping you now.')).toBeVisible({ timeout: 15_000 })
+  expect(await rawAction(ta.page, 'setStatus', { entryId: notOptedIn, status: 'helping' })).toMatchObject({
+    success: true,
+    data: { emailed: false },
+  })
+})
+
+test('paid integrations cannot be called straight from the browser', async ({ users }) => {
+  const [student] = await users(['Sam Student'])
+  await student.page.goto('/home')
+  for (const target of ['email/send', 'anthropic/chat-completion']) {
+    const res = await rawFetch(student.page, `/api/integrations/${target}`, { to: 'someone@example.com', messages: [] })
+    expect(res.status, `${target}: ${JSON.stringify(res.body)}`).toBe(404)
+  }
+})
+
 test('works at phone width (375px)', async ({ users }) => {
   test.setTimeout(120_000)
   const [ta, student] = await users(['Tina TA', 'Sam Student'])

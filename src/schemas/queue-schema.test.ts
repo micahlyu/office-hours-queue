@@ -54,6 +54,8 @@ describe('queue_entries', () => {
   it('a student can change the question but not the status', () => {
     expect(checkFieldPermissions(queueEntriesSchema, 'member', { question: 'new' }, entry.data)).toBeNull()
     expect(checkFieldPermissions(queueEntriesSchema, 'member', { status: 'done' }, entry.data)).not.toBeNull()
+    // Email opt-in is set only through joinQueue.
+    expect(checkFieldPermissions(queueEntriesSchema, 'member', { notify: true }, entry.data)).not.toBeNull()
   })
 
   it('the TA gets no direct write access to entries (status goes through setStatus)', () => {

@@ -26,6 +26,8 @@ export type QueueEntry = {
   studentId: string
   question: string
   status: EntryStatus
+  /** Student opted in to an email when the TA starts helping them. */
+  notify: boolean
 }
 
 // Signed-in users who aren't app admins are 'member' (or 'viewer'); both get the same rules.
@@ -60,6 +62,8 @@ export const queueEntriesSchema: CollectionSchema = {
     { name: 'studentId', storage: 'text', interpretation: 'plain', userBound: true, immutable: true },
     { name: 'question', storage: 'text', interpretation: 'plain', required: true, maxLength: QUESTION_MAX },
     { name: 'status', storage: 'text', interpretation: { kind: 'select', options: ['waiting', 'helping', 'done', 'skipped'] }, default: 'waiting' },
+    // Set only by joinQueue (not in writableFields), so nobody can opt someone else in to email.
+    { name: 'notify', storage: 'number', interpretation: { kind: 'boolean' }, default: false },
   ],
   ownerField: 'studentId',
   permissions: {
