@@ -233,5 +233,16 @@ Fix failures, redeploy, rerun, and log here.
   I gave those three 15s too (a test-only change, so no redeploy). After that: full live run 15/15, then 3 repeats of the queue tests 12/12.
   The original failure's details were overwritten before I could read them, so the cause is likely but not proven.
 
-**Human checked:** Signed in to the live site on a phone with a real account and reported "everything works as it should" (2026-11-23).
-Not stated: whether a second real account was used at the same time, so the live two-person flow is still covered only by the test accounts in `tests/queue.spec.ts`.
+**Human checked:** On 2026-11-23, signed in to the live site with two different real accounts, one on a phone, and ran the TA and student flow.
+Reported that everything worked as expected.
+
+---
+
+## 2026-11-23: Step 7, submission
+
+**Asked:** Stop the mock live-coding round. Push the repo and app for submission, and check whether anything else is needed.
+Also confirmed that the phone check used two different real accounts (the step 6 entry is corrected above).
+
+**Did:** a final secrets rescan, a final push to GitHub and DeepSpace, and a final deploy so the live release matches the last commit. Results are in the chat summary for this step.
+
+**Human checked:** Two-account real check on the live site, including a phone, passed (see step 6).
