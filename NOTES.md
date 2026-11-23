@@ -233,4 +233,5 @@ Fix failures, redeploy, rerun, and log here.
   I gave those three 15s too (a test-only change, so no redeploy). After that: full live run 15/15, then 3 repeats of the queue tests 12/12.
   The original failure's details were overwritten before I could read them, so the cause is likely but not proven.
 
-**Human checked:** _(pending)_
+**Human checked:** Signed in to the live site on a phone with a real account and reported "everything works as it should" (2026-11-23).
+Not stated: whether a second real account was used at the same time, so the live two-person flow is still covered only by the test accounts in `tests/queue.spec.ts`.
