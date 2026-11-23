@@ -13,6 +13,29 @@ A TA opens a session and shares its link, students join with a one-line question
 - **Live updates:** the queue, positions and statuses update on every open screen without reloading.
 - **TA controls:** mark *helping*, *done* or *skipped*, put someone back in the queue, and close or reopen the session.
   Only the TA of *that* session can do these.
+- **AI grouping (TA only):** one click groups the waiting questions by topic, so the TA can answer similar ones together.
+- **Email when it's your turn:** students can tick "Email me when it's my turn" and get an email when the TA starts helping them, so they don't have to watch the tab.
+
+## DeepSpace features and integrations used
+
+| What | DeepSpace piece | Why |
+|---|---|---|
+| Sign-in | Built-in auth (Google/GitHub) | No password handling of our own |
+| Live queue | Realtime records (`useQuery` / `useMutations`) | Every screen updates without polling |
+| Who can do what | Schema permissions (`'own'`, `userBound`, `writableFields`, `maxLength`) | Enforced on the server for every direct write |
+| Cross-record rules | Server actions | Checks a permission rule can't express |
+| Question grouping | `anthropic/chat-completion` integration (`claude-haiku-5-5`) | A TA facing 15 questions can spot the 4 that are the same |
+| Turn notifications | `email/send` integration | Students can leave the tab instead of watching it |
+
+Both integrations are billed to the app owner, so they are called **only from server actions**:
+- `groupQuestions` checks the caller is the session's TA.
+- Emails go only to a student who opted in, only when that session's TA marks them helping.
+
+The starter template's browser proxy (`/api/integrations/<name>/<endpoint>`) let any signed-in user call any paid integration on the owner's bill. It is closed (`src/server/http-routes.ts`), and a test proves it returns 404.
+
+Not used, on purpose:
+- Video (LiveKit) would suit remote office hours, but needs a new client dependency and media handling that couldn't be properly tested in the time.
+- Calendar and Slack need per-user account connections that don't help the core flow.
 
 ## How permissions are enforced (server side)
 
@@ -28,6 +51,9 @@ The browser's buttons are only UI.
 | Students can never set `status` | `status` isn't in any role's `writableFields` |
 | Join only an open session, once | `joinQueue` server action (`src/actions/index.ts`) |
 | Only *this session's* TA changes an entry's status | `setStatus` server action checks `session.taId === caller` |
+| Only *this session's* TA can run (and pay for) AI grouping | `groupQuestions` server action, same check |
+| Nobody can opt someone else in to email | `notify` is set only by `joinQueue` for the caller's own entry, and isn't in any `writableFields` |
+| No calling paid integrations from the browser | Template proxy route closed (`src/server/http-routes.ts`) |
 
 The two server actions exist because a permission rule can't look up a *different* record (the entry's session).
 Actions take the caller's id from the verified sign-in token, never from the request body.
@@ -37,12 +63,15 @@ Actions take the caller's id from the verified sign-in token, never from the req
 | Path | Purpose |
 |---|---|
 | `src/schemas/queue-schema.ts` | `sessions` and `queue_entries` collections, columns and permission rules |
-| `src/actions/index.ts` | `joinQueue` and `setStatus` server actions |
+| `src/actions/index.ts` | `joinQueue`, `setStatus` (plus the email) and `groupQuestions` server actions |
+| `src/actions/group-questions.ts` | The AI prompt, and a parser that never trusts the model's reply |
+| `src/server/http-routes.ts` | Template platform proxies, with the paid-integrations proxy closed |
 | `src/lib/actions.ts` | Browser helper that calls an action with the user's token |
 | `src/pages/index.tsx` | Static landing page |
 | `src/pages/(app)/(protected)/home.tsx` | Start a session; list your sessions |
 | `src/pages/(app)/(protected)/s/[sessionId].tsx` | The shareable session room: live queue, TA and student controls |
 | `src/schemas/queue-schema.test.ts` | Unit tests for the permission rules |
+| `src/actions/group-questions.test.ts` | Unit tests for parsing the AI reply (invented ids, duplicates, garbage) |
 | `tests/queue.spec.ts` | Two-account end-to-end tests (TA and student) |
 | `NOTES.md` | Build log: what was asked, built and checked at each step |
 
@@ -87,3 +116,7 @@ $env:E2E_BASE_URL='https://office-hours-queue.app.space'; npx playwright test -c
 - Two joins from the same student at the exact same instant could both get in. `joinQueue` checks and then creates, without a lock.
 - Any signed-in user can read every session's queue. There's no per-field read privacy.
 - The session page loads all sessions to find one. That's fine at class scale.
+- AI groups are suggestions. A wrong grouping only affects the TA's view, never the queue order.
+  The reply is checked so every waiting question appears exactly once, and question text is passed to the model as data, not instructions.
+- Email is best effort. If sending fails, the TA's click still succeeds and the failure is logged.
+  It's sent only on "helping", not when a student reaches the front of the line.

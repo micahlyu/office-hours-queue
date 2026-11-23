@@ -246,3 +246,46 @@ Also confirmed that the phone check used two different real accounts (the step 6
 **Did:** a final secrets rescan, a final push to GitHub and DeepSpace, and a final deploy so the live release matches the last commit. Results are in the chat summary for this step.
 
 **Human checked:** Two-account real check on the live site, including a phone, passed (see step 6).
+
+---
+
+## 2026-11-23: Step 8, integrations before submitting
+
+**Asked:** When opening the careers portal to submit, the agent found the task page's "helpful project bar":
+"Use at least three DeepSpace integrations." The main brief says there's no minimum.
+The app used DeepSpace's platform features but none of its integrations, so the agent stopped before filling in the form and asked.
+You chose to add integrations first, picked **two (AI + email)** over three, and approved **closing an open proxy route** the agent found.
+
+**Did:**
+- **Security fix:** the starter template's `/api/integrations/:name/:endpoint` let any signed-in user call any paid integration billed to the app owner.
+  For example, they could send arbitrary email from the platform's notification address, or run AI on the owner's bill.
+  It now returns 404, and the template-only imports it used are removed.
+- **AI (`anthropic/chat-completion`, `claude-haiku-5-5`):** the new `groupQuestions` action is TA-only, reads at most 50 waiting questions, and asks for JSON topic groups.
+  - `src/actions/group-questions.ts` passes questions to the model as JSON data, with a system prompt that says not to follow instructions inside them.
+  - `parseGroups` never trusts the reply: it keeps only real ids, removes duplicates, shortens long topics, and puts anything the model dropped into an "Other" group.
+  - The UI is a "Similar questions" panel for the TA, shown when 2 or more students are waiting.
+  - A one-off CLI probe of the endpoint cost $0.0000038.
+- **Email (`email/send`):** new `notify` column on `queue_entries`. It's set only by `joinQueue` from a "Email me when it's my turn" checkbox, and isn't in any `writableFields`.
+  - `setStatus` sends a plain-text email (so no HTML injection) only on the change *into* "helping", and only when `notify` is set.
+  - It's best effort: a failure is logged and never blocks the TA.
+  - It returns `emailed: true/false` so the result can be tested.
+- `callAction` now returns the action's `data`.
+- **Tests:**
+  - **Unit:** 6 new tests for `parseGroups`, plus a permission check that students can't set `notify` directly.
+    The first run **caught a real bug**: a duplicate id inside one group passed the filter. Fixed by checking and recording each id in one step.
+  - **End-to-end:** new tests check that:
+    - only the TA can run grouping;
+    - the AI groups both waiting questions exactly once under a model-written topic;
+    - `emailed: true` for the opted-in student and `false` for the other;
+    - `/api/integrations/email/send` and `/api/integrations/anthropic/chat-completion` return 404 for a signed-in user.
+- **Local:** unit 17/17, end-to-end 17/17.
+  **Live (release `rel_01M8529Y0TRBXK18J6ZMJBK6FE`):** our queue tests all passed, but two template tests failed.
+  - "WebSocket endpoint exists" timed out once, then passed on 3 reruns. The cause was a cold start right after the deploy.
+  - "API status page …" failed 3 of 6 reruns.
+    It waits for a "Loading…" message that a mocked 100 ms response keeps on screen for only about 100 ms.
+    The page is the template's hidden debug page (not in nav, unused by the app), so I **removed the page and its 2 tests** instead of tuning the timing.
+- Redeployed as release `rel_01M852F64QTS6YE02DCJSSBHNK`. **Live: 15/15**, then the queue tests 12/12 over 2 more repeats.
+  A screenshot showed the AI grouping both recursion questions under "Recursion not terminating, stack overflow (2)".
+- README now has a table of DeepSpace features and integrations, why video, calendar and Slack weren't used, the new rules, and the new known limits.
+
+**Human checked:** _(pending: review the writeup before the portal submission)_

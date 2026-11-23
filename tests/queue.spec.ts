@@ -204,6 +204,7 @@ test('integrations: AI groups similar questions for the TA; email opt-in when he
   for (const q of ['recursive factorial never reach', 'recursion runs forever']) {
     await expect(panel.getByText(q)).toHaveCount(1)
   }
+  await ta.page.screenshot({ path: 'test-results/ai-groups-ta.png', fullPage: true })
   const topics = await panel.getByTestId('question-group').locator('p').allInnerTexts()
   expect(topics.some((t) => !t.startsWith('Other')), `topics: ${topics.join(' | ')}`).toBe(true)
 
